@@ -1,8 +1,9 @@
 ::This .txt file details the command line items to be run upfront to build the Docker container. 
 
-::Required Installations
+::Required Installations/Setup
 ::VS Code Extensions - Python, Docker
 ::Docker Desktop Installation (https://docs.docker.com/get-started/get-docker/)
+::Snowflake Trial Account (https://signup.snowflake.com/?trial=student&cloud=aws&region=eu-west-1&utm_source=handsonessentials&utm_campaign=uni-cmcw#)
 
 
 ::for installing required virtual environment
