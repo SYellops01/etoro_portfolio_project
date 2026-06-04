@@ -83,8 +83,10 @@ services:
       airflow-init:
         condition: service_completed_successfully
     environment:
+      _PIP_ADDITIONAL_REQUIREMENTS: "snowflake-connector-python"
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
       PYTHONPATH: /opt/airflow
     volumes:
       - ../dags:/opt/airflow/dags
@@ -100,7 +102,9 @@ services:
       airflow-init:
         condition: service_completed_successfully
     environment:
+      _PIP_ADDITIONAL_REQUIREMENTS: "snowflake-connector-python"
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
       PYTHONPATH: /opt/airflow
     volumes:
       - ../dags:/opt/airflow/dags
@@ -114,6 +118,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      _PIP_ADDITIONAL_REQUIREMENTS: "snowflake-connector-python"
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
     command: >
       bash -c "
