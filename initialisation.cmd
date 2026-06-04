@@ -4,7 +4,7 @@
 ::VS Code Extensions - Python, Docker
 ::Docker Desktop Installation (https://docs.docker.com/get-started/get-docker/)
 ::Snowflake Trial Account (https://signup.snowflake.com/?trial=student&cloud=aws&region=eu-west-1&utm_source=handsonessentials&utm_campaign=uni-cmcw#)
-
+::    Having set this up, run setup.sql in 'Snowflake' using role ACCOUNTADMIN.
 
 ::for installing required virtual environment
 pip install virtualenv
