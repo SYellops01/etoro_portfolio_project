@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+venv/
+.env/
+
+# Logs
+logs/
+airflow/logs/
+
+# Git / IDE
+.git/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
