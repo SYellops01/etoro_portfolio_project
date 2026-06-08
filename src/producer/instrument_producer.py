@@ -72,14 +72,16 @@ while True:
     instruments = fetch_instruments()
     if instruments:
         print(">>Producing instrument mapping")
-        producer.send("instruments", value = instruments)
-        print(">>Instrument mapping sent to consumer")
+        for instrument in instruments:
+            producer.send("instruments", value = instrument)
+        print(f">>Instrument mapping sent to consumer for {len(instruments)} instruments")
     else:
         print(">>Attempting retry...")
         time.sleep(60)
         instruments = fetch_instruments()
         if instruments:
             print(">>Producing instrument mapping")
-            producer.send("instruments", value = instruments)
-            print(">>Instrument mapping sent to consumer")
+            for instrument in instruments:
+                producer.send("instruments", value = instrument)
+            print(f">>Instrument mapping sent to consumer for {len(instruments)} instruments")
     time.sleep(86400)
