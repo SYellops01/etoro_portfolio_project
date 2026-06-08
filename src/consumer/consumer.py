@@ -61,6 +61,8 @@ for message in consumer:
         instrument_id = record.get("instrumentID", "unknown")
     elif topic == "stock-history":
         instrument_id = record[0].get("instrumentId", "unnknown")
+    elif topic == "instruments":
+        instrument_id = record.get("instrumentId", "unknown")
     else:
         instrument_id = "all_instruments"
     timestamp = int(time.time())
