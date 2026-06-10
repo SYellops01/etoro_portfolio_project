@@ -27,4 +27,4 @@ with all_positions as
 )
 SELECT * FROM mirror_credit
 UNION ALL
-SELECT * FROM direct_credit;
+SELECT * FROM direct_credit
