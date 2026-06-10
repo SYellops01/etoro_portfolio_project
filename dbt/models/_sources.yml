@@ -1,0 +1,48 @@
+version: 2
+
+sources:
+  - name: bronze
+    database: etoro_portfolio
+    schema: bronze
+    description: "Raw variant data ingested from eToro API via Kafka and Snowflake COPY INTO"
+
+    tables:
+      - name: instruments
+        description: "Raw instrument metadata — all tradeable instruments available on eToro. Refreshed daily."
+        columns:
+          - name: raw_data
+            description: "Raw VARIANT column containing instrument details"
+            data-tests: 
+              - not_null
+          - name: loaded_at
+            description: "Timestamp when the record was ingested into bronze"
+
+      - name: portfolio
+        description: "Raw portfolio snapshots including positions and mirror trades. Refreshed every 5 minutes."
+        columns:
+          - name: raw_data
+            data-tests: 
+              - not_null
+            description: "Raw VARIANT column containing clientPortfolio object showing instruments in current portfolio"
+          - name: loaded_at
+            description: "Timestamp when the record was ingested into bronze"
+
+      - name: stock_history
+        description: "Raw daily candle history for each instrument. One-off backfill of 1000 days per new instrument."
+        columns:
+          - name: raw_data
+            data-tests: 
+              - not_null
+            description: "Raw VARIANT column containing historical candle data for last 1000 days"
+          - name: loaded_at
+            description: "Timestamp when the record was ingested into bronze"
+
+      - name: stock_prices
+        description: "Raw live price snapshots polled every 5 minutes per instrument."
+        columns:
+          - name: raw_data
+            data-tests: 
+              - not_null
+            description: "Raw VARIANT column containing stock price rates data"
+          - name: loaded_at
+            description: "Timestamp when the record was ingested into bronze"
