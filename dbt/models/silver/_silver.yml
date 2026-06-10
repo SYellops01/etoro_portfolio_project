@@ -6,11 +6,11 @@ models:
     columns:
       - name: instrument_id
         description: "Unique instrument identifier"
-        data_tests:
+        tests:
           - not_null
       - name: asset_class
         description: "The asset type of the instrument"
-        data_tests:
+        tests:
           - not_null
 
   - name: silver_open_positions
@@ -18,22 +18,23 @@ models:
     columns:
       - name: order_id
         description: "Unique order identifier"
-        data_tests:
+        tests:
           - not_null
       - name: amount
         description: "Amount in USD of the stock purchased"
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              strictly: true
+              arguments:
+                min_value: 0
+                strictly: true
       - name: is_buy
         description: "Boolean value - true when the stock has been bought, false when sold"
-        data_tests:
+        tests:
           - not_null
       - name: instrument_id
         description: "Unique instrument id of the instrument being bought or sold"
-        data_tests:
+        tests:
           - not_null
           - relationships:
               arguments:
@@ -41,18 +42,20 @@ models:
                 field: 'instrument_id'
       - name: open_rate
         description: "The opening price paid for this position in the portfolio"
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              strictly: true
+              arguments:
+                min_value: 0
+                strictly: true
       - name: units
         description: "The number of units of the asset purchased"
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              strictly: true
+              arguments:
+                min_value: 0
+                strictly: true
 
   - name: silver_available_credit
     description: "Available cash held within each mirror position and at the account level"
@@ -62,7 +65,7 @@ models:
     columns:
       - name: instrument_id
         description: "Instrument identifier"
-        data_tests:
+        tests:
           - not_null
           - relationships:
               arguments:
@@ -72,22 +75,25 @@ models:
         description: "The timestamp corresponding to this stock price"
       - name: live_price
         description: "The current price of the corresponding instrument"
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              strictly: true
+              arguments:
+                min_value: 0
+                strictly: true
       - name: high
         description: "The highest price of this instrument for the given time period"
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              strictly: true
+              arguments:
+                min_value: 0
+                strictly: true
       - name: low
         description: "The lowest price of this instrument for the given time period"
-        data_tests:
+        tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              strictly: true
+              arguments:
+                min_value: 0
+                strictly: true
