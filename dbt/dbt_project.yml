@@ -28,6 +28,10 @@ models:
       +materialized: incremental
     gold:
       +schema: gold
+      +materialized: table
+      +full_refresh: true
+    marts:
+      +schema: marts
       +materialized: view
 
 #Define snapshots, target path and strategy

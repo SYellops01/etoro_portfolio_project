@@ -1,0 +1,98 @@
+version: 2
+
+models:
+  - name: dim_instruments
+    description: "Deduplicated dimension table containing all instruments on the eToro site"
+    columns:
+      - name: instrument_id
+        description: "Unique instrument identifier"
+        tests:
+          - not_null
+          - unique
+      - name: asset_class
+        description: "The asset type of the instrument"
+        tests:
+          - not_null
+
+  - name: fct_cash_positions
+    description: "De-duplicated list of held cash positions, split by mirror/account"
+    columns:
+      - name: mirror_name
+        description: "The name of the mirror/'Direct Position' where cash is held at the account level"
+        tests:
+          - not_null
+      - name: amount
+        description: "Amount in USD of cash held"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                strictly: true
+
+  - name: fct_stock_prices
+    description: "Scaffolded pricing, showing the live price (to nearest 5 minutes) for each instrument. One price per instrument and timestamp"
+    columns:
+      - name: instrument_id
+        description: "Unique instrument identifier"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_instruments')
+                field: 'instrument_id'
+      - name: price_timestamp
+        description: "The timestamp (rounded down to nearest 5 minutes) at which the price was pulled"
+        tests:
+          - not_null
+      - name: live_price
+        description: "The live price pulled from silver_price_series model for the instrument at the given time"
+      - name: live_price_filled
+        description: "Scaffolded live price - where no live price exists, this fills from latest known price for this instrument"
+
+  - name: fct_live_portfolio
+    description: "Fact showing details relating to the current portfolio, open position and time"
+    columns:
+      - name: order_id
+        description: "Unique identifier for each order in the portfolio"
+        tests:
+          - not_null
+          - unique
+      - name: opening_amount
+        description: "The amount in USD of the position when opened"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                strictly: true
+      - name: open_datetime
+        description: "The timestamp when the order was opened"
+        tests:
+          - not_null
+      - name: is_buy
+        description: "Boolean value identifying whether the order is a buy/sell order"
+        tests:
+        - not_null
+      - name: instrument_id
+        description: "The unique identifer for the instrument that has been ordered"
+        tests:
+        - not_null
+      - name: leverage
+        description: "The decimal amount leveraged on this position"
+      - name: open_rate
+        description: "The instrument price at the time of opening"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                strictly: true
+      - name: total_fees
+        description: "The total fees incurred for this investment"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                max_value: 0
+                strictly: false
