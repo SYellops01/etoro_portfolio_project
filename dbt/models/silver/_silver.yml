@@ -73,6 +73,8 @@ models:
                 field: 'instrument_id'
       - name: price_timestamp
         description: "The timestamp corresponding to this stock price"
+      - name: price_timestamp_5_min
+        description: "The timestamp corresponding to this stock price, rounded down to the nearest 5 minutes"
       - name: live_price
         description: "The current price of the corresponding instrument"
         tests:
@@ -100,3 +102,8 @@ models:
     
   - name: silver_price_scaffold
     description: "Scaffold providing all available price timestamps in 5 minute increments across instruments for time series construction"
+    columns:
+      - name: instrument_id
+        description: "The unique identifier for each instrument"
+      - name: price_timestamp_5_min
+        description: "The price timestamps (rounded down to nearest 5 minutes) for each instrument to scaffold"
