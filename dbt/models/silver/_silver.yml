@@ -97,3 +97,6 @@ models:
               arguments:
                 min_value: 0
                 strictly: true
+    
+  - name: silver_price_scaffold
+    description: "Scaffold providing all available price timestamps in 5 minute increments across instruments for time series construction"
