@@ -21,6 +21,22 @@ with stock_hist as
         loaded_at
     FROM {{ source('bronze', 'stock_prices') }}
 )
-SELECT * FROM stock_hist
-UNION ALL
-SELECT * FROM stock_price
+,full_price as
+(
+    SELECT * FROM stock_hist
+    UNION ALL
+    SELECT * FROM stock_price
+)
+--Convert price timestamp into 5 minute windows (rounded down)
+SELECT
+    instrument_id,
+    price_timestamp,
+    DATEADD(minute,
+        FLOOR(EXTRACT(minute from price_timestamp)/5)*5,
+        DATE_TRUNC('hour',price_timestamp)
+        ) AS price_timestamp_5_min,
+    live_price,
+    high,
+    low,
+    loaded_at
+FROM full_price
