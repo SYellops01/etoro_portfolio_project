@@ -1,0 +1,78 @@
+version: 2
+
+models:
+  - name: cash_positions
+    description: "Final view containing currently held cash positions, split by mirror"
+
+  - name: instruments
+    description: "Dimension table exposing instruments and relevant information such as sector and industry"
+    columns:
+      - name: instrument_id
+        description: "Unique order identifier"
+        tests:
+          - not_null
+          - unique
+      - name: symbol
+        description: "The short-form simple displayed in eToro"
+        tests:
+          - not_null
+
+  - name: profit_loss
+    description: "Comprehensive data showing the account profit/loss over time"
+    columns:
+      - name: order_id
+        description: "The unique order identifier - one per timestamp"
+        tests:
+          - not_null
+      - name: instrument_id
+        description: "The instrument_id of the stock held"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('silver_instruments')
+                field: 'instrument_id'
+      - name: is_buy
+        description: "Boolean value for whether the stock has been bought or sold"
+      - name: open_rate
+        description: "The price of the stock when purchased"
+        tests:
+          - not_null
+      - name: total_fees
+        description: "The value of fees incurred in USD for this purchase"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                max_value: 0
+                strictly: false
+      - name: price_timestamp
+        description: "The timestamp corresponding to the current stock price"
+      - name: live_price
+        description: "The current stock price at the given timestamp"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                strictly: true
+      - name: current_amount
+        description: "The current value of the investment in USD - (opening_amount * live_price * leverage / open_rate) + total_fees"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                strictly: true
+      - name: profit_loss
+        description: "The current amount gained/lost in USD"
+        tests:
+          - not_null
+      - name: gross_exposure
+        description: "At any given time, the percentage of the current amount as percentage of the total value of investments, excluding cash"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                strictly: true        
