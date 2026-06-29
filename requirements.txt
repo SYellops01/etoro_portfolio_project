@@ -5,3 +5,4 @@ requests
 pytickersymbols
 pandas
 tqdm
+apache-airflow
