@@ -15,7 +15,6 @@ s3 = boto3.client(
 
 #Define buckets and create if not exists
 topic_bucket_mapping = {
-    "instruments" : "bronze-instruments",
     "portfolio" : "bronze-portfolio",
     "stock-history" : "bronze-stock-history",
     "stock-prices" : "bronze-stock-prices"
@@ -61,8 +60,6 @@ for message in consumer:
         instrument_id = record.get("instrumentID", "unknown")
     elif topic == "stock-history":
         instrument_id = record[0].get("instrumentId", "unnknown")
-    elif topic == "instruments":
-        instrument_id = record.get("instrumentId", "unknown")
     else:
         instrument_id = "all_instruments"
     timestamp = int(time.time())
