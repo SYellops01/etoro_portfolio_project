@@ -93,6 +93,7 @@ services:
       - ../dags:/opt/airflow/dags
       - ../logs:/opt/airflow/logs
       - ../plugins:/opt/airflow/plugins
+      - ../src:/opt/airflow/dags/src
     ports:
       - "8080:8080"
     command: webserver
@@ -112,6 +113,7 @@ services:
       - ../dags:/opt/airflow/dags
       - ../logs:/opt/airflow/logs
       - ../plugins:/opt/airflow/plugins
+      - ../src:/opt/airflow/dags/src
     command: scheduler
 
   airflow-init:
@@ -134,19 +136,6 @@ services:
       --password password123
       || true
       "
-
-  instrument-producer:
-    build:
-      context: ..
-      dockerfile: infrastructure/Dockerfile
-    depends_on:
-      kafka:
-        condition: service_healthy
-    command: ["python", "-m", "src.producer.instrument_producer"]
-    environment:
-      - PYTHONPATH=/app
-      - KAFKA_BOOTSTRAP=kafka:9092
-      - PYTHONUNBUFFERED=1
 
   portfolio-producer:
     build:
