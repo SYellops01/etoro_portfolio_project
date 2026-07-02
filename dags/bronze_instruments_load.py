@@ -1,100 +1,130 @@
+import json
+import math
+import sys
 import os
-import boto3
+import uuid
+import requests
 import snowflake.connector
+import airflow
+import time
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
-from snowflake_credentials import get_snowflake_account, get_snowflake_password, get_snowflake_username
+from snowflake_credentials import (
+    get_snowflake_account,
+    get_snowflake_password,
+    get_snowflake_username,
+)
+from src.producer.credentials import get_api_key, get_user_key
 
-# MinIO config
-MINIO_ENDPOINT = "http://minio:9000"
-MINIO_ACCESS_KEY = "admin"
-MINIO_SECRET_KEY = "password123"
-LOCAL_DIR = "/tmp/minio_downloads"
+# ── Config ────────────────────────────────────────────────────────────────────
 
-# Snowflake config
-SNOWFLAKE_USER = get_snowflake_username()
-SNOWFLAKE_PASSWORD = get_snowflake_password()
-SNOWFLAKE_ACCOUNT = get_snowflake_account()
+url = "https://public-api.etoro.com/api/v1/market-data/search"
+page_size   = 2000
+TMP_FILE    = "/tmp/instruments.json"
+
+SNOWFLAKE_USER      = get_snowflake_username()
+SNOWFLAKE_PASSWORD  = get_snowflake_password()
+SNOWFLAKE_ACCOUNT   = get_snowflake_account()
 SNOWFLAKE_WAREHOUSE = "LOAD_WH"
-SNOWFLAKE_DB = "ETORO_PORTFOLIO"
-SNOWFLAKE_SCHEMA = "BRONZE"
+SNOWFLAKE_DB        = "ETORO_PORTFOLIO"
+SNOWFLAKE_SCHEMA    = "BRONZE"
+STAGE               = "STG_INSTRUMENTS"
 
-BUCKET = "bronze-instruments"
-STAGE = "STG_INSTRUMENTS"
+# ── Task callable ─────────────────────────────────────────────────────────────
 
-def download_from_minio():
-    download_dir = os.path.join(LOCAL_DIR, BUCKET)
-    os.makedirs(download_dir, exist_ok=True)
+def fetch_and_stage_instruments(**kwargs):
+    """
+    Fetches all instruments from the eToro API, writes them as a single JSON
+    array to a tmp file, PUTs it into the Snowflake internal stage, then cleans up.
+    """
+    fetched_at = int(time.time())
+    headers = {
+        "x-request-id": str(uuid.uuid4()),
+        "x-api-key": get_api_key(),
+        "x-user-key": get_user_key(),
+    }
+    all_instruments = []
+    # ── Fetch all pages ───────────────────────────────────────────────────────
+    try:
+        response = requests.get(url, headers=headers, params={"page": 1, "pageSize": page_size})
+        response.raise_for_status()
+        data = response.json()
+ 
+        total_pages = math.ceil(data["totalItems"] / page_size)
+        all_instruments = data["items"]
+ 
+        for page in range(2, total_pages + 1):
+            response = requests.get(url, headers=headers, params={"page": page, "pageSize": page_size})
+            response.raise_for_status()
+            all_instruments.extend(response.json()["items"])
+ 
+    except Exception as e:
+        print(f"Error loading instruments: {e}")
+    
+    if all_instruments:
+        for instrument in all_instruments:
+            instrument["fetched_at"] = fetched_at
+    else:
+        print("No instruments to load")
 
-    s3 = boto3.client(
-        "s3",
-        endpoint_url=MINIO_ENDPOINT,
-        aws_access_key_id=MINIO_ACCESS_KEY,
-        aws_secret_access_key=MINIO_SECRET_KEY
-    )
+    print(f">> Fetched {len(all_instruments)} instruments from eToro")
 
-    objects = s3.list_objects_v2(Bucket=BUCKET).get("Contents", [])
-    local_files = []
-    for obj in objects:
-        key = obj["Key"]
-        local_file = os.path.join(download_dir, key.replace("/", "_"))
-        s3.download_file(BUCKET, key, local_file)
-        print(f"Downloaded {key} -> {local_file}")
-        local_files.append(local_file)
+    # ── Write single JSON file ────────────────────────────────────────────────
+    with open(TMP_FILE, "w") as f:
+        json.dump(all_instruments, f)
 
-    print(f"Downloaded {len(local_files)} files from {BUCKET}")
-    return local_files
+    print(f">> Written to {TMP_FILE}")
 
-def put_to_snowflake_stage(**kwargs):
-    local_files = kwargs["ti"].xcom_pull(task_ids="download_instruments")
-
-    if not local_files:
-        print("No files to stage for INSTRUMENTS")
-        return
-
+    # ── PUT to Snowflake stage ────────────────────────────────────────────────
     conn = snowflake.connector.connect(
         user=SNOWFLAKE_USER,
         password=SNOWFLAKE_PASSWORD,
         account=SNOWFLAKE_ACCOUNT,
         warehouse=SNOWFLAKE_WAREHOUSE,
         database=SNOWFLAKE_DB,
-        schema=SNOWFLAKE_SCHEMA
+        schema=SNOWFLAKE_SCHEMA,
     )
     cur = conn.cursor()
 
-    for f in local_files:
-        cur.execute(f"PUT file://{f} @{SNOWFLAKE_DB}.{SNOWFLAKE_SCHEMA}.{STAGE} AUTO_COMPRESS=TRUE OVERWRITE=TRUE")
-        print(f"PUT {f} -> @{STAGE}")
+    try:
+        cur.execute(
+            f"PUT file://{TMP_FILE} "
+            f"@{SNOWFLAKE_DB}.{SNOWFLAKE_SCHEMA}.{STAGE} "
+            f"AUTO_COMPRESS=TRUE OVERWRITE=TRUE"
+        )
+        print(f">> PUT instruments.json -> @{STAGE}")
+    finally:
+        cur.close()
+        conn.close()
+        os.remove(TMP_FILE)
+        print(f">> Cleaned up {TMP_FILE}")
 
-    cur.close()
-    conn.close()
+
+# ── DAG definition ────────────────────────────────────────────────────────────
 
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
     "start_date": datetime(2026, 1, 1),
     "retries": 1,
-    "retry_delay": timedelta(minutes=5)
+    "retry_delay": timedelta(minutes=5),
 }
 
 with DAG(
     "bronze_instruments_load",
     default_args=default_args,
-    schedule_interval="0 */1 * * *",
+    schedule="* 23 * * *",
     catchup=False,
-    tags=["bronze", "instruments"]
+    tags=["bronze", "instruments"],
 ) as dag:
 
-    download = PythonOperator(
-        task_id="download_instruments",
-        python_callable=download_from_minio
+    fetch_and_stage = PythonOperator(
+        task_id="fetch_and_stage_instruments",
+        python_callable=fetch_and_stage_instruments,
     )
 
-    put = PythonOperator(
-        task_id="put_instruments",
-        python_callable=put_to_snowflake_stage,
-        provide_context=True
-    )
-
-    download >> put
+    fetch_and_stage
