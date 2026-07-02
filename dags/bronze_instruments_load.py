@@ -126,5 +126,3 @@ with DAG(
         task_id="fetch_and_stage_instruments",
         python_callable=fetch_and_stage_instruments,
     )
-
-    fetch_and_stage
