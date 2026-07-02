@@ -1,0 +1,18 @@
+definition_version: 2
+entities:
+  streamlit_app:
+    type: streamlit
+    main_file: streamlit_app.py
+    artifacts:
+      - pyproject.toml
+      - streamlit_app.py
+      - .streamlit/config.toml
+    identifier:
+      database: ETORO_PORTFOLIO
+      schema: ETORO_PORTFOLIO_MARTS
+      name: ETORO_APP
+    title: ETORO_APP
+    query_warehouse: LOAD_WH
+    compute_pool: SYSTEM_COMPUTE_POOL_CPU
+    run_mode: SpcsOnly
+    execute_as: OWNER
