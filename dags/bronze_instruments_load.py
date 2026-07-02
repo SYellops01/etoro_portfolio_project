@@ -6,6 +6,7 @@ import uuid
 import requests
 import snowflake.connector
 import airflow
+import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -21,8 +22,8 @@ from src.producer.credentials import get_api_key, get_user_key
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-ETORO_URL   = "https://public-api.etoro.com/api/v1/instruments/discover"
-PAGE_SIZE   = 2000
+url = "https://public-api.etoro.com/api/v1/market-data/search"
+page_size   = 2000
 TMP_FILE    = "/tmp/instruments.json"
 
 SNOWFLAKE_USER      = get_snowflake_username()
@@ -40,32 +41,35 @@ def fetch_and_stage_instruments(**kwargs):
     Fetches all instruments from the eToro API, writes them as a single JSON
     array to a tmp file, PUTs it into the Snowflake internal stage, then cleans up.
     """
+    fetched_at = int(time.time())
     headers = {
         "x-request-id": str(uuid.uuid4()),
         "x-api-key": get_api_key(),
         "x-user-key": get_user_key(),
     }
-
+    all_instruments = []
     # ── Fetch all pages ───────────────────────────────────────────────────────
-    response = requests.get(
-        ETORO_URL,
-        headers=headers,
-        params={"page": 1, "pageSize": PAGE_SIZE},
-    )
-    response.raise_for_status()
-    data = response.json()
-
-    total_pages = math.ceil(data["totalItems"] / PAGE_SIZE)
-    all_instruments = data["items"]
-
-    for page in range(2, total_pages + 1):
-        response = requests.get(
-            ETORO_URL,
-            headers=headers,
-            params={"page": page, "pageSize": PAGE_SIZE},
-        )
+    try:
+        response = requests.get(url, headers=headers, params={"page": 1, "pageSize": page_size})
         response.raise_for_status()
-        all_instruments.extend(response.json()["items"])
+        data = response.json()
+ 
+        total_pages = math.ceil(data["totalItems"] / page_size)
+        all_instruments = data["items"]
+ 
+        for page in range(2, total_pages + 1):
+            response = requests.get(url, headers=headers, params={"page": page, "pageSize": page_size})
+            response.raise_for_status()
+            all_instruments.extend(response.json()["items"])
+ 
+    except Exception as e:
+        print(f"Error loading instruments: {e}")
+    
+    if all_instruments:
+        for instrument in all_instruments:
+            instrument["fetched_at"] = fetched_at
+    else:
+        print("No instruments to load")
 
     print(f">> Fetched {len(all_instruments)} instruments from eToro")
 
@@ -113,7 +117,7 @@ default_args = {
 with DAG(
     "bronze_instruments_load",
     default_args=default_args,
-    schedule="0 */1 * * *",
+    schedule="* 23 * * *",
     catchup=False,
     tags=["bronze", "instruments"],
 ) as dag:
@@ -121,5 +125,4 @@ with DAG(
     fetch_and_stage = PythonOperator(
         task_id="fetch_and_stage_instruments",
         python_callable=fetch_and_stage_instruments,
-        provide_context=True,
     )
