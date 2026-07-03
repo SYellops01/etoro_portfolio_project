@@ -30,6 +30,11 @@ In eToro, it is not currently possible to view exposure across direct positions 
 - Credentials for eToro API should be added in src > producer > credentials.py
 - Credentials for Snowflake should be added in dags > snowflake_credentials.py
 
+## API Documentation
+- Collect all instruments - https://api-portal.etoro.com/api-reference/market-data/search-for-instruments
+- Get Account Portfolio - https://api-portal.etoro.com/api-reference/trading-real/get-portfolio-breakdown#get-portfolio-breakdown
+- Get Live Market Rates - https://api-portal.etoro.com/api-reference/market-data/get-instrument-market-rates#get-instrument-market-rates
+- Get Backfilled Price History - https://api-portal.etoro.com/api-reference/market-data/get-instrument-candle-history#get-instrument-candle-history
 
 # Solution Architecture
 ## Overall Architecture
