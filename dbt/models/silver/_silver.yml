@@ -100,6 +100,8 @@ models:
     
   - name: silver_price_scaffold
     description: "Scaffold providing all available price timestamps in 5 minute increments across instruments for time series construction"
+    config:
+      full_refresh: true
     columns:
       - name: instrument_id
         description: "The unique identifier for each instrument"
