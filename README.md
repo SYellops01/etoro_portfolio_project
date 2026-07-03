@@ -38,7 +38,13 @@ In eToro, it is not currently possible to view exposure across direct positions 
 
 # Solution Architecture
 ## Overall Architecture
-*Diagram*
+<img width="1571" height="733" alt="image" src="https://github.com/user-attachments/assets/301119c6-b1f4-4a6d-9780-401c99c3dec2" />
+
+- Docker used for containerisation and Kafka to pull data from the eToro API into minIO storage.
+- Airflow Scheduler to pull data from minIO into Snowflake Internal Stages
+- Scheduled COPY INTO in Snowflake to pull data from stages into bronze layer as unstructured, VARIANT data.
+- dbt used for Snowflake transformation from bronze to marts layer.
+- Streamlit-in-Snowflake app deployed to visualise final portfolio.
 
 ## Naming Conventions
 - Stages are prefixed with 'stg_'
