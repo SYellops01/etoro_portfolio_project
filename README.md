@@ -67,4 +67,11 @@ Several singular tests are also included:
 - Assert that live stock price is positive.
 
 ## Snowflake Semantic Layer
+<img width="845" height="533" alt="image" src="https://github.com/user-attachments/assets/fca91a1c-2aa6-4568-aa51-1b15c3f02c64" />
+
+- DIM_INSTRUMENTS : Deduplicated dimension table containing relevant infromation on all instruments on the eToro site.
+- FCT_CASH_POSITIONS: De-duplicated list of held cash positions, split by mirror/account.
+- FCT_STOCK_PRICES: Scaffolded pricing, showing the live price (to nearest 5 minutes) for each instrument. One price per instrument and timestamp.
+- FCT_LIVE_PORTFOLIO: Fact showing details relating to the current portfolio, open position and time.
+
 
